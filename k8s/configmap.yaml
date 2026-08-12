@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: taskly-api-config
+  namespace: default
+data:
+  REDIS_URL: "redis://taskly-sushmitha-redis.dj3ys1.ng.0001.use1.cache.amazonaws.com:6379/0"

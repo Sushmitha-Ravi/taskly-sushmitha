@@ -24,7 +24,7 @@
 
 Taskly is a production-oriented task management API built with **FastAPI**. The project progressively applies backend engineering, containerization, observability, and AWS infrastructure practices.
 
-The project is currently completed through **Stage 4 — AWS Infrastructure with Terraform**.
+The project is currently completed through **Stage 5 — Kubernetes / EKS Deployment**.
 
 ### Current architecture
 
@@ -41,7 +41,6 @@ The project is currently completed through **Stage 4 — AWS Infrastructure with
                      Terraform
 ```
 
-> Stage 5 will deploy the existing production image to the existing Amazon EKS cluster. It is intentionally not included as completed work yet.
 
 ---
 
@@ -53,7 +52,7 @@ The project is currently completed through **Stage 4 — AWS Infrastructure with
 | **Stage 2** | Application Production Upgrade | ✅ Complete |
 | **Stage 3** | Docker & Local Production Stack | ✅ Complete |
 | **Stage 4** | AWS Infrastructure with Terraform | ✅ Complete |
-| **Stage 5** | Kubernetes / EKS Deployment | ⏳ Next |
+| **Stage 5** | Kubernetes / EKS Deployment | ✅ Complete |
 
 ---
 
@@ -324,11 +323,15 @@ bootcamp-tasks-api/
 │   ├── providers.tf
 │   ├── variables.tf
 │   └── outputs.tf
+├── k8s/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── configmap.yaml
 │
 └── README.md
 ```
 
-> Kubernetes manifests will be added in Stage 5.
+
 
 ---
 
@@ -425,7 +428,7 @@ Docker & Local Production
 AWS Infrastructure
        │
        ▼
-EKS Deployment             ← NEXT
+EKS Deployment             ← COMPLETE
        │
        ▼
 CI/CD
@@ -442,24 +445,155 @@ Production-Ready Taskly
 
 ---
 
-## Next Stage
+# Stage 5 — Kubernetes / EKS Deployment
 
-### Stage 5 — Deploy Taskly to Amazon EKS
+Stage 5 deployed the existing production Taskly API image to the existing Amazon EKS infrastructure created in Stage 4. No Stage 4 AWS infrastructure was recreated.
 
-The next stage will use the **existing Stage 4 infrastructure** to:
+### ECR Deployment
 
-1. Push the production Docker image to ECR
-2. Prepare Kubernetes manifests
-3. Configure Secrets and ConfigMaps
-4. Deploy Taskly API to EKS
-5. Connect the application to RDS PostgreSQL
-6. Connect the application to ElastiCache Redis
-7. Configure Kubernetes Service
-8. Configure health checks and resources
-9. Verify logs, request IDs, metrics, PostgreSQL, and Redis
-10. Expose and test the API
+- Local image: `taskly-sushmitha-api:stage5`
+- Image ID: `cbe41a93f7d4`
+- ECR repository: `taskly-sushmitha-api`
+- ECR tag: `stage5`
+- ECR digest: `sha256:bf96a2442b8a07f411c8296c6e47b5150e335d2aa0f61a9a4bbeb1de6cdaf19b`
+- ECR scan on push: enabled
 
-**Stage 5 has not started in this repository documentation yet.**
+### Kubernetes Deployment
+
+- Cluster: `taskly-sushmitha-eks`
+- Kubernetes version: `v1.36.2-eks-254016e`
+- Replicas: `2`
+- Container port: `8000`
+- Image pulled successfully by both EKS nodes
+
+Kubernetes manifests:
+
+- `k8s/deployment.yaml`
+- `k8s/service.yaml`
+- `k8s/configmap.yaml`
+
+### Configuration and Secrets
+
+The application configuration was separated between Kubernetes ConfigMap and Secret resources.
+
+**ConfigMap**
+
+- `REDIS_URL`
+- Existing ElastiCache Redis endpoint
+- Redis database `0`
+- Port `6379`
+
+**Secret**
+
+- `DATABASE_URL`
+- Existing RDS PostgreSQL endpoint
+- Database: `taskly`
+- User: `tasklyadmin`
+- Password stored only in the Kubernetes Secret
+- No database credentials committed to Git
+
+### Kubernetes Architecture
+
+```text
+Internet
+   |
+AWS Load Balancer
+   |
+Kubernetes LoadBalancer Service
+   |
++-----------------------+
+|                       |
+Taskly API Pod      Taskly API Pod
+|                       |
++-----------+-----------+
+            |
+       +----+----+
+       |         |
+       v         v
+RDS PostgreSQL  ElastiCache Redis
+
+```
+
+### Health Checks and Resources
+
+The Deployment uses:
+
+- Startup probe on `/health`
+- Readiness probe on `/health`
+- Liveness probe on `/health`
+- CPU request: `100m`
+- Memory request: `128Mi`
+- CPU limit: `500m`
+- Memory limit: `512Mi`
+
+The container also runs with production-oriented security settings:
+
+- Non-root user
+- `runAsUser: 1000`
+- Privilege escalation disabled
+- All Linux capabilities dropped
+- `RuntimeDefault` seccomp profile
+
+### Verification
+
+The Stage 5 deployment was verified end-to-end.
+
+**Deployment**
+
+- `taskly-api` deployment: `2/2` available
+- Both pods: `Running`
+- Both pods: `Ready`
+- Restarts: `0`
+
+**Kubernetes Service**
+
+- Service type: `LoadBalancer`
+- External AWS Load Balancer provisioned
+- Service endpoints resolved to both API pods
+
+**API**
+
+- `GET /health` returned HTTP `200`
+- `GET /tasks` returned HTTP `200`
+- `POST /tasks` returned HTTP `201`
+- `GET /tasks/{id}` returned HTTP `200`
+
+**PostgreSQL**
+
+A task was successfully created and retrieved through the deployed API, verifying application connectivity to Amazon RDS PostgreSQL.
+
+**Redis**
+
+Redis connectivity was verified with `PONG`.
+
+The `tasks:all` cache key was also verified in ElastiCache with a positive TTL, confirming Redis caching was functioning.
+
+**Metrics**
+
+The Prometheus metric:
+
+```text
+tasks_created_total 1.0
+```
+
+confirmed that the task creation was recorded by the deployed application.
+
+**Logging**
+
+Structured application logs confirmed the task creation and included the generated request ID and task ID.
+
+**External API**
+
+The API was successfully accessed through the AWS Load Balancer:
+
+```text
+GET /health    → HTTP 200
+GET /tasks     → HTTP 200
+GET /metrics   → metrics available
+```
+### Stage 5 Result
+
+Stage 5 is complete. Taskly is now deployed on Amazon EKS using the production Docker image stored in Amazon ECR, with Amazon RDS PostgreSQL and Amazon ElastiCache Redis as managed backend services.
 
 ---
 
