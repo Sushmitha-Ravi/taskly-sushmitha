@@ -5,3 +5,10 @@ venv/
 .venv/
 *.egg-info/
 dist/
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+terraform/crash.log
+terraform/crash.*.log

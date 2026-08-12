@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="420" viewBox="0 0 1600 420">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#07152f"/>
+    <stop offset="48%" stop-color="#101a45"/>
+    <stop offset="100%" stop-color="#160d35"/>
+  </linearGradient>
+  <linearGradient id="title" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#22d3ee"/>
+    <stop offset="48%" stop-color="#60a5fa"/>
+    <stop offset="100%" stop-color="#a78bfa"/>
+  </linearGradient>
+  <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#22d3ee" stop-opacity=".1"/>
+    <stop offset="45%" stop-color="#22d3ee" stop-opacity=".8"/>
+    <stop offset="75%" stop-color="#a78bfa" stop-opacity=".8"/>
+    <stop offset="100%" stop-color="#a78bfa" stop-opacity=".05"/>
+  </linearGradient>
+  <filter id="glow">
+    <feGaussianBlur stdDeviation="5" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<rect width="1600" height="420" rx="28" fill="url(#bg)"/>
+<path d="M0 330 C230 230 330 390 550 285 S930 200 1110 285 S1390 360 1600 210" fill="none" stroke="url(#line)" stroke-width="3"/>
+<path d="M0 355 C230 255 330 415 550 310 S930 225 1110 310 S1390 385 1600 235" fill="none" stroke="#38bdf8" stroke-opacity=".18" stroke-width="1"/>
+<path d="M0 375 C230 275 330 435 550 330 S930 245 1110 330 S1390 405 1600 255" fill="none" stroke="#8b5cf6" stroke-opacity=".16" stroke-width="1"/>
+<!-- circuit accents -->
+<g stroke="#22d3ee" stroke-opacity=".55" fill="none" stroke-width="2">
+  <path d="M1180 70h120v38h80v-38h110"/>
+  <path d="M1270 150h100v45h110"/>
+  <path d="M1160 220h70v-45h80"/>
+</g>
+<g fill="#22d3ee" filter="url(#glow)">
+  <circle cx="1300" cy="70" r="5"/><circle cx="1380" cy="108" r="5"/><circle cx="1440" cy="195" r="5"/>
+</g>
+<g fill="#a78bfa" filter="url(#glow)">
+  <circle cx="1510" cy="70" r="5"/><circle cx="1390" cy="150" r="5"/>
+</g>
+<!-- simple cloud -->
+<g transform="translate(1210 235)" fill="none" stroke="#60a5fa" stroke-width="5" opacity=".9">
+  <path d="M20 72h118c31 0 31-48 0-48-7 0-13 1-18 4C110 0 48 2 40 40 4 38-8 72 20 72z"/>
+</g>
+<!-- check icon -->
+<g transform="translate(108 85)">
+  <rect x="0" y="0" width="82" height="82" rx="18" fill="none" stroke="url(#title)" stroke-width="7"/>
+  <path d="M20 42l17 17 34-37" fill="none" stroke="#22d3ee" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="220" y="165" font-family="Inter,Arial,sans-serif" font-size="108" font-weight="800" letter-spacing="4" fill="url(#title)">TASKLY</text>
+<text x="112" y="235" font-family="Inter,Arial,sans-serif" font-size="35" font-weight="600" fill="#f8fafc">Production-Ready Task Management API</text>
+<text x="114" y="280" font-family="Inter,Arial,sans-serif" font-size="22" fill="#cbd5e1">FastAPI  •  PostgreSQL  •  Redis  •  Docker  •  AWS  •  Terraform  •  EKS</text>
+<rect x="112" y="318" width="690" height="3" rx="2" fill="url(#line)"/>
+<text x="112" y="355" font-family="Inter,Arial,sans-serif" font-size="18" fill="#94a3b8">A cloud-native backend evolving from local development to AWS infrastructure.</text>
+<!-- small technology dots -->
+<g font-family="Inter,Arial,sans-serif" font-size="16" font-weight="700">
+  <text x="1100" y="350" fill="#22d3ee">FASTAPI</text>
+  <text x="1220" y="350" fill="#60a5fa">AWS</text>
+  <text x="1290" y="350" fill="#a78bfa">TERRAFORM</text>
+  <text x="1450" y="350" fill="#34d399">EKS</text>
+</g>
+</svg>
