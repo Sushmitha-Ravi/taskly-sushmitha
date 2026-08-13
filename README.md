@@ -24,8 +24,7 @@
 
 Taskly is a production-oriented task management API built with **FastAPI**. The project progressively applies backend engineering, containerization, observability, and AWS infrastructure practices.
 
-The project is currently completed through **Stage 6 — CI/CD Pipeline**.
-
+The project is currently completed through **Stage 7 — Monitoring, Logging & Observability**.
 ### Current architecture
 
 ```text
@@ -54,6 +53,7 @@ The project is currently completed through **Stage 6 — CI/CD Pipeline**.
 | **Stage 4** | AWS Infrastructure with Terraform | ✅ Complete |
 | **Stage 5** | Kubernetes / EKS Deployment | ✅ Complete |
 | **Stage 6** | CI/CD Pipeline | ✅ Complete |
+| **Stage 7** | Monitoring, Logging & Observability | ✅ Complete |
 
 ---
 
@@ -435,7 +435,7 @@ EKS Deployment
 CI/CD                      ← COMPLETE
        │
        ▼
-Monitoring & Logging
+Monitoring & Observability ← COMPLETE
        │
        ▼
 Security Hardening
@@ -697,6 +697,159 @@ k8s/cicd-rbac.yaml
 ### Stage 6 Result
 
 Stage 6 is complete. Taskly now has an automated GitHub Actions CI/CD pipeline that validates the application, builds and pushes a commit-specific Docker image to Amazon ECR, deploys that image to Amazon EKS, verifies the Kubernetes rollout, and confirms external application health through the LoadBalancer.
+
+# Stage 7 — Monitoring, Logging & Observability
+Stage 7 added application monitoring, structured logging, Kubernetes resource monitoring, EKS control-plane logging, and end-to-end observability verification.
+
+The implementation was verified against the running Taskly application on Amazon EKS.
+
+### Monitoring & Observability Architecture
+
+```text
+Taskly API
+   |
+   +--------------------+
+   |                    |
+   v                    v
+Prometheus Metrics    Structured JSON Logs
+   |                    |
+   v                    v
+/metrics             kubectl logs
+   |
+   v
+Per-pod metrics
+
+Amazon EKS
+   |
+   +-----------------------------+
+   |                             |
+   v                             v
+Metrics Server             Control-plane logging
+   |                             |
+   v                             v
+kubectl top pods/nodes      Amazon CloudWatch
+```
+
+### Application Metrics
+
+Taskly exposes Prometheus-compatible metrics through the `/metrics` endpoint.
+
+Verified metrics include:
+
+- `taskly_http_requests_total` — HTTP request counter by method, path, and status
+- `taskly_http_request_duration_seconds` — HTTP request latency histogram
+- `tasks_created_total` — task creation counter
+- Python process and runtime metrics
+
+Metrics were verified directly inside both running Taskly replicas.
+
+Because the metrics are maintained in application process memory, counter values are replica-specific. Each pod should therefore be scraped individually and aggregated by the monitoring system.
+
+### Kubernetes Resource Monitoring
+
+Kubernetes Metrics Server was installed to provide live resource usage for the EKS cluster.
+
+Verified successfully:
+
+- Metrics API available through `v1beta1.metrics.k8s.io`
+- Taskly pod CPU and memory usage available through `kubectl top pods`
+- EKS node CPU and memory usage available through `kubectl top nodes`
+
+Example verified Taskly pod usage:
+
+- `2m` CPU
+- `70Mi` memory per pod
+
+Both Taskly replicas were running successfully during verification.
+
+### AWS / CloudWatch Monitoring
+
+EKS control-plane logging was enabled through Terraform for the Taskly cluster.
+
+The following EKS control-plane log types were enabled:
+
+- API
+- Audit
+- Authenticator
+- Controller Manager
+- Scheduler
+
+Verification confirmed the CloudWatch log group:
+
+`/aws/eks/taskly-sushmitha-eks/cluster`
+
+The configuration is managed through Terraform so that the monitoring configuration remains reproducible.
+
+### Structured Application Logging
+
+Taskly uses structured JSON logging with request correlation.
+
+Verified application log output includes:
+
+- Log level
+- Logger name
+- Timestamp
+- Message
+- `request_id`
+- `task_id` for task creation events
+
+A real task creation request was verified in the EKS pod logs with:
+
+- `message`: `Task created`
+- `request_id`: generated UUID
+- `task_id`: `3`
+- HTTP response: `201 Created`
+
+This confirms that application requests can be correlated through structured logs.
+
+### Health Monitoring
+
+Taskly uses Kubernetes health probes backed by the `/health` endpoint.
+
+Configured probes:
+
+- **Startup probe** — verifies the application starts successfully
+- **Readiness probe** — controls whether a pod receives traffic
+- **Liveness probe** — detects an unhealthy application and allows Kubernetes to restart it
+
+Verified configuration:
+
+- Readiness: `/health`, 5-second initial delay, 10-second period
+- Liveness: `/health`, 15-second initial delay, 20-second period
+- Both probes use a 3-failure threshold
+
+During verification, both Taskly replicas remained `Running` and `Ready`.
+
+### End-to-End Verification
+
+Stage 7 was verified against the live Taskly deployment on Amazon EKS.
+
+The verification confirmed:
+
+- External `POST /tasks` successfully created task ID `3`
+- `GET /tasks` returned the stored tasks
+- Prometheus metrics recorded HTTP requests and task creation
+- Structured logs recorded the task creation event with a request ID
+- Both Taskly replicas remained healthy and available
+- Pod resource usage was available through Metrics Server
+- EKS control-plane logging was enabled
+- The external LoadBalancer `/health` endpoint returned `200 OK`
+
+This verified the complete observability path from application traffic through application metrics, logs, Kubernetes monitoring, and AWS control-plane logging.
+
+### Stage 7 Result
+
+Stage 7 is complete. Taskly now has application metrics, structured JSON logging, Kubernetes resource monitoring, EKS control-plane logging through CloudWatch, Kubernetes health probes, and verified end-to-end observability across the deployed application.
+
+### Stage 7 Implementation
+
+Key implementation areas:
+
+- `main.py` — Prometheus metrics and request monitoring
+- `logging_config.py` — structured JSON logging
+- Kubernetes deployment configuration — health probes and application monitoring
+- Terraform EKS configuration — control-plane logging
+- Metrics Server — Kubernetes CPU and memory monitoring
 
 ---
 
