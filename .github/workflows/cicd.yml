@@ -115,4 +115,4 @@ jobs:
           echo "LoadBalancer: $LOAD_BALANCER"
 
           curl --fail --silent --show-error \
-            "http://$LOAD_BALANCER/health"
+            "http://$LOAD_BALANCER:8000/health"
