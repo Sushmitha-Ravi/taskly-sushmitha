@@ -342,7 +342,7 @@ resource "aws_db_instance" "taskly" {
 
   db_name             = "taskly"
   username            = "tasklyadmin"
-  password_wo         = var.db_password
+  password_wo         = ephemeral.aws_secretsmanager_secret_version.database_credentials.secret_string
   password_wo_version = 1
   port                = 5432
 
@@ -399,18 +399,21 @@ resource "aws_elasticache_replication_group" "taskly" {
 
   engine             = "redis"
   node_type          = "cache.t3.micro"
-  num_cache_clusters = 1
+  num_cache_clusters = 2
 
   port = 6379
 
   subnet_group_name  = aws_elasticache_subnet_group.taskly.name
   security_group_ids = [aws_security_group.redis.id]
 
-  automatic_failover_enabled = false
-  multi_az_enabled           = false
+  automatic_failover_enabled = true
+  multi_az_enabled           = true
 
   tags = {
     Name    = "${var.project_name}-redis"
     Project = var.project_name
   }
+}
+ephemeral "aws_secretsmanager_secret_version" "database_credentials" {
+  secret_id = "taskly-sushmitha/database-credentials"
 }

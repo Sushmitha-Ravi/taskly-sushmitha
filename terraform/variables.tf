@@ -8,8 +8,3 @@ variable "project_name" {
   type        = string
   default     = "taskly-sushmitha"
 }
-variable "db_password" {
-  description = "Password for the Taskly PostgreSQL database"
-  type        = string
-  sensitive   = true
-}

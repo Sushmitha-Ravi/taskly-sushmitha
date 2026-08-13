@@ -24,7 +24,7 @@
 
 Taskly is a production-oriented task management API built with **FastAPI**. The project progressively applies backend engineering, containerization, observability, and AWS infrastructure practices.
 
-The project is currently completed through **Stage 8 — Secrets Management & Security**.
+The project is currently completed through **Stage 9 — High Availability**.
 ### Current architecture
 
 ```text
@@ -940,12 +940,7 @@ The CSI driver retrieves the database secret from AWS Secrets Manager and synchr
 
 ### Terraform RDS Password Handling
 
-The RDS Terraform resource now uses:
-
-```hcl
-password_wo         = var.db_password
-password_wo_version = 1
-```
+RDS credentials are retrieved from the existing AWS Secrets Manager secret through Terraform without storing the password in repository files.
 ### Security Verification
 
 Stage 8 verification confirmed:
@@ -972,6 +967,38 @@ Stage 8 is complete.
 Taskly now uses AWS Secrets Manager and Amazon EKS Pod Identity for database credential management, with the Secrets Store CSI Driver providing Kubernetes integration.
 
 The RDS password is handled through Terraform's write-only password configuration, and the previous plaintext Terraform password file has been removed.
+
+---
+
+## Stage 9 — High Availability
+
+Stage 9 implemented high availability across the Taskly AWS infrastructure.
+
+### High Availability Configuration
+
+- EKS worker nodes distributed across `us-east-1a` and `us-east-1b`
+- Taskly API pods distributed across both AZs
+- Taskly API PodDisruptionBudget configured
+- Taskly API HPA configured
+- RDS Multi-AZ enabled
+- Redis replication group configured with two nodes
+- Redis nodes distributed across different AZs
+- Redis Multi-AZ enabled
+- Redis automatic failover enabled
+- Terraform Redis HA configuration applied
+
+### Verification
+
+- EKS nodes: `Ready` across both AZs
+- RDS: `available`, Multi-AZ enabled
+- Redis: `available`, 2 members, Multi-AZ enabled
+- Redis automatic failover: enabled
+- Terraform plan/apply: successful
+- No resources destroyed
+
+### Stage 9 Result
+
+Stage 9 is complete. Taskly now has multi-AZ application, database, and cache high-availability configuration.
 
 ---
 
