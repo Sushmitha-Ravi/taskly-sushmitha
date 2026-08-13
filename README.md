@@ -24,7 +24,7 @@
 
 Taskly is a production-oriented task management API built with **FastAPI**. The project progressively applies backend engineering, containerization, observability, and AWS infrastructure practices.
 
-The project is currently completed through **Stage 5 — Kubernetes / EKS Deployment**.
+The project is currently completed through **Stage 6 — CI/CD Pipeline**.
 
 ### Current architecture
 
@@ -53,6 +53,7 @@ The project is currently completed through **Stage 5 — Kubernetes / EKS Deploy
 | **Stage 3** | Docker & Local Production Stack | ✅ Complete |
 | **Stage 4** | AWS Infrastructure with Terraform | ✅ Complete |
 | **Stage 5** | Kubernetes / EKS Deployment | ✅ Complete |
+| **Stage 6** | CI/CD Pipeline | ✅ Complete |
 
 ---
 
@@ -428,10 +429,10 @@ Docker & Local Production
 AWS Infrastructure
        │
        ▼
-EKS Deployment             ← COMPLETE
+EKS Deployment
        │
        ▼
-CI/CD
+CI/CD                      ← COMPLETE
        │
        ▼
 Monitoring & Logging
@@ -594,6 +595,108 @@ GET /metrics   → metrics available
 ### Stage 5 Result
 
 Stage 5 is complete. Taskly is now deployed on Amazon EKS using the production Docker image stored in Amazon ECR, with Amazon RDS PostgreSQL and Amazon ElastiCache Redis as managed backend services.
+
+# Stage 6 — CI/CD Pipeline
+
+Stage 6 automated the build, container publishing, Kubernetes deployment, and application verification process using GitHub Actions.
+
+The pipeline runs automatically when changes are pushed to the `taskly-development` branch.
+
+### CI/CD Architecture
+
+```text
+GitHub
+   |
+   | push to taskly-development
+   v
+GitHub Actions
+   |
+   +----------------------+
+   |                      |
+   v                      v
+Python validation     GitHub OIDC
+                          |
+                          v
+                    AWS IAM Role
+                          |
+              +-----------+-----------+
+              |                       |
+              v                       v
+         Amazon ECR              Amazon EKS
+              |                       |
+              |                 Update Deployment
+              |                       |
+              +----------+------------+
+                         |
+                         v
+                  Rollout Verification
+                         |
+                         v
+                LoadBalancer /health
+
+### GitHub Actions Workflow
+
+Workflow file:
+
+```text
+.github/workflows/cicd.yml
+```
+### CI/CD Verification
+
+The GitHub Actions pipeline was successfully executed from the `taskly-development` branch.
+
+The successful workflow verified:
+
+- Python application validation completed successfully
+- GitHub OIDC authentication with AWS succeeded
+- AWS identity verification succeeded
+- Docker image was built successfully
+- Docker image was pushed to Amazon ECR
+- Kubernetes access to Amazon EKS succeeded
+- `taskly-api` deployment was updated with the new image
+- Kubernetes rollout completed successfully
+- Two Taskly API pods reached `Running` and `Ready` state
+- External LoadBalancer health check returned HTTP `200`
+- `/health` returned:
+
+```json
+{"status":"ok","service":"tasks-api"}
+```
+
+### AWS Authentication
+
+GitHub Actions authenticates to AWS using OpenID Connect (OIDC), so no long-lived AWS access keys are stored in GitHub.
+
+The workflow assumes the existing IAM role:
+
+```text
+taskly-sushmitha-github-actions-role
+```
+The IAM trust policy is restricted to the Taskly repository and the `taskly-development` branch.
+
+The pipeline was verified to authenticate successfully to AWS and access the existing Taskly ECR and EKS resources.
+
+The Docker image is tagged with the Git commit SHA, providing traceability between the GitHub commit, Amazon ECR image, and Kubernetes deployment.
+
+### ECR Deployment
+
+The CI/CD pipeline builds the production Docker image and pushes it to the existing Amazon ECR repository:
+
+```text
+686699774218.dkr.ecr.us-east-1.amazonaws.com/taskly-sushmitha-api
+
+### Kubernetes CI/CD Authorization
+
+Kubernetes RBAC was added specifically for the CI/CD identity.
+
+Manifest:
+
+```text
+k8s/cicd-rbac.yaml
+```
+### Stage 6 Result
+
+Stage 6 is complete. Taskly now has an automated GitHub Actions CI/CD pipeline that validates the application, builds and pushes a commit-specific Docker image to Amazon ECR, deploys that image to Amazon EKS, verifies the Kubernetes rollout, and confirms external application health through the LoadBalancer.
 
 ---
 
