@@ -18,6 +18,10 @@ resource "aws_subnet" "public_a" {
     Name    = "${var.project_name}-public-a"
     Project = var.project_name
   }
+  lifecycle {
+    ignore_changes = [tags["kubernetes.io/role/elb"]]
+  }
+
 }
 
 resource "aws_subnet" "public_b" {
@@ -30,6 +34,10 @@ resource "aws_subnet" "public_b" {
     Name    = "${var.project_name}-public-b"
     Project = var.project_name
   }
+  lifecycle {
+    ignore_changes = [tags["kubernetes.io/role/elb"]]
+  }
+
 }
 
 resource "aws_subnet" "private_a" {
@@ -41,6 +49,10 @@ resource "aws_subnet" "private_a" {
     Name    = "${var.project_name}-private-a"
     Project = var.project_name
   }
+  lifecycle {
+    ignore_changes = [tags["kubernetes.io/role/internal-elb"]]
+  }
+
 }
 
 resource "aws_subnet" "private_b" {
@@ -52,7 +64,12 @@ resource "aws_subnet" "private_b" {
     Name    = "${var.project_name}-private-b"
     Project = var.project_name
   }
+  lifecycle {
+    ignore_changes = [tags["kubernetes.io/role/internal-elb"]]
+  }
+
 }
+
 resource "aws_internet_gateway" "taskly" {
   vpc_id = aws_vpc.taskly.id
 
@@ -131,6 +148,7 @@ resource "aws_route_table_association" "private_b" {
   subnet_id      = aws_subnet.private_b.id
   route_table_id = aws_route_table.private.id
 }
+
 resource "aws_ec2_tag" "public_a_eks" {
   resource_id = aws_subnet.public_a.id
   key         = "kubernetes.io/role/elb"
@@ -154,6 +172,7 @@ resource "aws_ec2_tag" "private_b_eks" {
   key         = "kubernetes.io/role/internal-elb"
   value       = "1"
 }
+
 resource "aws_iam_role" "eks_cluster" {
   name = "${var.project_name}-eks-cluster-role"
 
@@ -350,7 +369,7 @@ resource "aws_db_instance" "taskly" {
   vpc_security_group_ids = [aws_security_group.rds.id]
 
   publicly_accessible = false
-  multi_az            = false
+  multi_az            = true
   skip_final_snapshot = true
   deletion_protection = false
 
