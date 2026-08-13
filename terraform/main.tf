@@ -340,10 +340,11 @@ resource "aws_db_instance" "taskly" {
   storage_type          = "gp3"
   storage_encrypted     = true
 
-  db_name  = "taskly"
-  username = "tasklyadmin"
-  password = var.db_password
-  port     = 5432
+  db_name             = "taskly"
+  username            = "tasklyadmin"
+  password_wo         = var.db_password
+  password_wo_version = 1
+  port                = 5432
 
   db_subnet_group_name   = aws_db_subnet_group.taskly.name
   vpc_security_group_ids = [aws_security_group.rds.id]

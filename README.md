@@ -24,7 +24,7 @@
 
 Taskly is a production-oriented task management API built with **FastAPI**. The project progressively applies backend engineering, containerization, observability, and AWS infrastructure practices.
 
-The project is currently completed through **Stage 7 — Monitoring, Logging & Observability**.
+The project is currently completed through **Stage 8 — Secrets Management & Security**.
 ### Current architecture
 
 ```text
@@ -54,6 +54,7 @@ The project is currently completed through **Stage 7 — Monitoring, Logging & O
 | **Stage 5** | Kubernetes / EKS Deployment | ✅ Complete |
 | **Stage 6** | CI/CD Pipeline | ✅ Complete |
 | **Stage 7** | Monitoring, Logging & Observability | ✅ Complete |
+| **Stage 8** | Secrets Management & Security | ✅ Complete |
 
 ---
 
@@ -438,7 +439,7 @@ CI/CD                      ← COMPLETE
 Monitoring & Observability ← COMPLETE
        │
        ▼
-Security Hardening
+Secrets Management & Security ← COMPLETE
        │
        ▼
 Production-Ready Taskly
@@ -850,6 +851,127 @@ Key implementation areas:
 - Kubernetes deployment configuration — health probes and application monitoring
 - Terraform EKS configuration — control-plane logging
 - Metrics Server — Kubernetes CPU and memory monitoring
+
+# Stage 8 — Secrets Management & Security
+
+Stage 8 replaced plaintext database credential handling with AWS Secrets Manager, Amazon EKS Pod Identity, and the Secrets Store CSI Driver.
+
+The implementation was verified against the running Taskly application on Amazon EKS.
+
+### Secrets Management Architecture
+
+```text
+Taskly API
+    |
+    v
+Kubernetes ServiceAccount
+taskly-api
+    |
+    v
+EKS Pod Identity
+    |
+    v
+IAM Role
+taskly-sushmitha-secrets-role
+    |
+    v
+AWS Secrets Manager
+taskly-sushmitha/database-credentials
+    |
+    v
+AWS Secrets Store CSI Driver
+    |
+    v
+Kubernetes Secret
+taskly-api-secret
+```
+
+### AWS Secrets Manager
+
+A dedicated Secrets Manager secret was created for the Taskly database credentials:
+
+- Secret: `taskly-sushmitha/database-credentials`
+- Region: `us-east-1`
+- Secret values are not stored in the Git repository.
+- Secret values are not documented in the README.
+
+### IAM Security
+
+A dedicated IAM policy was created:
+
+`taskly-sushmitha-secrets-manager-read`
+
+The policy grants only:
+
+- `secretsmanager:GetSecretValue`
+- `secretsmanager:DescribeSecret`
+
+The policy is attached to:
+
+`taskly-sushmitha-secrets-role`
+
+### Amazon EKS Pod Identity
+
+The Taskly API uses the dedicated Kubernetes ServiceAccount:
+
+`taskly-api`
+
+An EKS Pod Identity association connects this ServiceAccount to:
+
+`taskly-sushmitha-secrets-role`
+
+This allows Taskly pods to obtain AWS credentials without storing AWS access keys in Kubernetes manifests or application configuration.
+
+### Secrets Store CSI Driver
+
+The AWS Secrets Store CSI Driver integration was enabled in the EKS cluster.
+
+Verified components include:
+
+- Secrets Store CSI Driver
+- AWS Secrets Manager provider
+- `SecretProviderClass` CRD
+- `taskly-database-secret`
+- SecretProviderClassPodStatus resources for the running Taskly pods
+
+The CSI driver retrieves the database secret from AWS Secrets Manager and synchronizes it into:
+
+`taskly-api-secret`
+
+### Terraform RDS Password Handling
+
+The RDS Terraform resource now uses:
+
+```hcl
+password_wo         = var.db_password
+password_wo_version = 1
+```
+### Security Verification
+
+Stage 8 verification confirmed:
+
+- RDS status: `available`
+- RDS storage encryption: enabled
+- RDS public accessibility: disabled
+- Taskly deployment: `2/2` replicas available
+- Taskly pods: `Running`
+- Pod Identity association: configured
+- Secrets Store CSI Driver: `Running`
+- AWS Secrets Manager secret: available
+- Kubernetes `taskly-api-secret`: synchronized
+- `/health`: successful
+- `/tasks`: successful
+- Kubernetes resource metrics: available
+- `terraform/terraform.tfvars`: removed
+- `terraform/terraform.tfvars`: not tracked by Git
+
+### Stage 8 Result
+
+Stage 8 is complete.
+
+Taskly now uses AWS Secrets Manager and Amazon EKS Pod Identity for database credential management, with the Secrets Store CSI Driver providing Kubernetes integration.
+
+The RDS password is handled through Terraform's write-only password configuration, and the previous plaintext Terraform password file has been removed.
 
 ---
 
