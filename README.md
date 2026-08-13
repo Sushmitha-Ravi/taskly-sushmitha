@@ -55,6 +55,7 @@ The project is currently completed through **Stage 9 — High Availability**.
 | **Stage 6** | CI/CD Pipeline | ✅ Complete |
 | **Stage 7** | Monitoring, Logging & Observability | ✅ Complete |
 | **Stage 8** | Secrets Management & Security | ✅ Complete |
+| **Stage 9** | High Availability | ✅ Complete |
 
 ---
 
